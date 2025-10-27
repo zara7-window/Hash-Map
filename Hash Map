@@ -1,0 +1,98 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+const int SIZE = 10;
+
+enum SlotState { EMPTY, OCCUPIED, DELETED };
+
+struct Fish {
+    int id;
+    string name;
+    int quantity;
+    SlotState state;
+};
+
+void initTable(Fish table[]) {
+    for(int i = 0; i < SIZE; i++)
+        table[i].state = EMPTY;
+}
+
+int hashFunc(int key) {
+    return key % SIZE;
+}
+
+bool insert(Fish table[], int id, string name, int quantity) {
+    int firstDeleted = -1;
+    for(int i = 0; i < SIZE; i++) {
+        int idx = (hashFunc(id) + i) % SIZE;
+        if(table[idx].state == OCCUPIED) {
+            if(table[idx].id == id) {
+                table[idx].quantity += quantity; // update stok
+                return true;
+            }
+        } else if(table[idx].state == DELETED && firstDeleted == -1) {
+            firstDeleted = idx;
+        } else if(table[idx].state == EMPTY) {
+            if(firstDeleted != -1) idx = firstDeleted;
+            table[idx] = {id, name, quantity, OCCUPIED};
+            return true;
+        }
+    }
+    if(firstDeleted != -1) {
+        table[firstDeleted] = {id, name, quantity, OCCUPIED};
+        return true;
+    }
+    cout << "Tabel penuh!\n";
+    return false;
+}
+
+Fish* search(Fish table[], int id) {
+    for(int i = 0; i < SIZE; i++) {
+        int idx = (hashFunc(id) + i) % SIZE;
+        if(table[idx].state == EMPTY) return nullptr;
+        if(table[idx].state == OCCUPIED && table[idx].id == id)
+            return &table[idx];
+    }
+    return nullptr;
+}
+
+bool remove(Fish table[], int id) {
+    Fish* f = search(table, id);
+    if(f == nullptr) return false;
+    f->state = DELETED;
+    return true;
+}
+
+void display(Fish table[]) {
+    cout << "\n--- Stok Ikan Hias (Open Addressing) ---\n";
+    for(int i = 0; i < SIZE; i++) {
+        cout << i << ": ";
+        if(table[i].state == EMPTY) cout << "EMPTY";
+        else if(table[i].state == DELETED) cout << "DELETED";
+        else cout << "[" << table[i].id << " | " << table[i].name << " | " << table[i].quantity << "]";
+        cout << endl;
+    }
+}
+
+int main() {
+    Fish table[SIZE];
+    initTable(table);
+
+    insert(table, 1, "Guppy", 10);
+    insert(table, 2, "Goldfish", 5);
+    insert(table, 11, "Betta", 7);  
+    insert(table, 12, "Molly", 8);  
+
+    cout << "Stok Ikan Awal:\n";
+    display(table);
+
+    Fish* f = search(table, 11);
+    if(f) cout << "\nDitemukan ikan ID 11: " << f->name << ", Qty=" << f->quantity << endl;
+
+    remove(table, 2);
+    cout << "\nStok Ikan Setelah Hapus ID 2:\n";
+    display(table);
+
+    return 0;
+}
